@@ -1,0 +1,72 @@
+# used for local serverless
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Applicaton to upload post data to s3 and on event read s3 and post to some endpoint to process
+
+Globals:
+  Api:
+    # Allows an application running locally on port 8080 to call this API
+    Cors:
+      AllowMethods: "'OPTIONS,POST,GET'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'http://localhost:3000'"
+
+Parameters:
+    BucketName:
+        Type: String
+    XAutherizationValue:
+        Type: String
+
+Resources:
+  GetTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: bin/handlers/token
+      Runtime: go1.x
+      Events:
+        Event:
+          Type: Api
+          Properties:
+            Path: /token
+            Method: post
+            Environment:
+              Variables:
+                REGION: us-east-1
+                XAutherization:  abcd1234
+                BUCKET: pci-2                
+          
+  RefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: bin/handlers/refreshToken
+      Runtime: go1.x
+      Events:
+        Upload:
+          Type: Api
+          Properties:
+            Path: /refreshToken
+            Method: post
+            Bucket: pci-1
+            Environment:
+              Variables:
+                REGION: us-east-1
+                XAutherization:  abcd1234
+                BUCKET: pci-2
+
+  WelcomeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: bin/handlers/welcome
+      Runtime: go1.x
+      Events:
+        Upload:
+          Type: Api
+          Properties:
+            Path: /welcome
+            Method: get
+            Bucket: pci-1
+            Environment:
+              Variables:
+                REGION: us-east-1
+                XAutherization:  abcd1234
+                BUCKET: pci-2
